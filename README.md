@@ -148,10 +148,10 @@ git push -u origin main
 
 ### Cron schedule — Hobby vs Pro
 
-The default `vercel.json` schedule is `0 */6 * * *` (every 6 hours). This is **Pro-plan friendly**.
+The default `vercel.json` schedule is `0 6 * * *` (once daily at 06:00 UTC). This is **Hobby-plan safe**.
 
-- **Vercel Hobby**: limited to **at most one cron invocation per day**. If you deploy on Hobby you must change the schedule to e.g. `0 6 * * *` (once per day) before the first deploy, or the cron job will be rejected.
-- **Vercel Pro / Enterprise**: 6h is fine. You can also tighten further (`0 */3 * * *`) if your sources publish more frequently.
+- **Vercel Hobby**: limited to **at most one cron invocation per day**. Keep a once-daily schedule such as `0 6 * * *`.
+- **Vercel Pro / Enterprise**: you can tighten cadence to e.g. `0 */6 * * *` or `0 */3 * * *` if your sources publish more frequently.
 
 Edit the `schedule` field in `vercel.json` to switch.
 
