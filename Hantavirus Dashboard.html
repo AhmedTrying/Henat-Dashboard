@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Hantavirus Dashboard — Latest official statistics & developer API</title>
+  <meta name="description" content="Latest official Hantavirus statistics, outbreak updates, and developer-ready data exports. Aggregated from WHO, CDC, ECDC, PAHO and national health ministries. Demo build."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="components-chrome.jsx"></script>
+  <script type="text/babel" src="components-data.jsx"></script>
+  <script type="text/babel" src="page-home.jsx"></script>
+  <script type="text/babel" src="page-dashboard.jsx"></script>
+  <script type="text/babel" src="page-developers.jsx"></script>
+
+  <script type="text/babel">
+  /* global React, ReactDOM, HD */
+  const { useState, useEffect } = React;
+  const { Navbar, Footer, Home, Dashboard, Developers, RouteCtx } = HD;
+  const { TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakToggle, TweakSlider, TweakColor } = window;
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "light",
+    "density": "compact",
+    "accentHue": 310,
+    "previewDevice": "desktop",
+    "showSourcePanel": true
+  }/*EDITMODE-END*/;
+
+  function parseHash() {
+    const h = (location.hash || "").replace(/^#\/?/, "").split("/")[0];
+    if (!h) return "home";
+    if (h === "dashboard" || h === "developers") return h;
+    return "home";
+  }
+
+  function App() {
+    const [route, setRoute] = useState(parseHash());
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+    useEffect(() => {
+      const onHash = () => setRoute(parseHash());
+      window.addEventListener("hashchange", onHash);
+      return () => window.removeEventListener("hashchange", onHash);
+    }, []);
+
+    useEffect(() => {
+      document.documentElement.setAttribute("data-theme", t.theme);
+    }, [t.theme]);
+
+    useEffect(() => {
+      const root = document.documentElement;
+      const L = t.theme === "dark" ? 0.72 : 0.50;
+      const C = 0.075;
+      root.style.setProperty("--accent", `oklch(${L} ${C} ${t.accentHue})`);
+      root.style.setProperty("--accent-ink", `oklch(${t.theme === "dark" ? 0.85 : 0.32} ${C} ${t.accentHue})`);
+      root.style.setProperty("--accent-soft", `oklch(${t.theme === "dark" ? 0.30 : 0.94} ${t.theme === "dark" ? 0.04 : 0.022} ${t.accentHue})`);
+      const gutter = t.density === "compact" ? 24 : 32;
+      root.style.setProperty("--gutter", gutter + "px");
+    }, [t.accentHue, t.theme, t.density]);
+
+    const go = (id) => {
+      const path = id === "home" ? "" : id;
+      location.hash = "#/" + path;
+      setRoute(id);
+      window.scrollTo(0, 0);
+    };
+
+    const Page = route === "dashboard" ? Dashboard : route === "developers" ? Developers : Home;
+    const screenLabel = route === "dashboard" ? "02 Dashboard" : route === "developers" ? "03 Developers" : "01 Home";
+
+    const content = (
+      <RouteCtx.Provider value={{ route, go }}>
+        <div data-screen-label={screenLabel} style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+          <Navbar/>
+          <div style={{ flex: 1 }}>
+            <Page/>
+          </div>
+          <Footer/>
+        </div>
+      </RouteCtx.Provider>
+    );
+
+    return (
+      <>
+        {t.previewDevice === "mobile" ? (
+          <div style={{ background: "var(--bg-sunken)", minHeight: "100vh", padding: 24 }}>
+            <div className="device-frame">
+              <div className="device-scroll">
+                <style>{`
+                  .device-scroll .container { padding: 0 16px !important; }
+                  .device-scroll h1 { font-size: 28px !important; }
+                  .device-scroll h2 { font-size: 20px !important; }
+                  .device-scroll .hero-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+                  .device-scroll .metrics-grid { grid-template-columns: 1fr 1fr !important; }
+                  .device-scroll .grid-2, .device-scroll .grid-3 { grid-template-columns: 1fr !important; }
+                  .device-scroll .footer-grid { grid-template-columns: 1fr 1fr !important; }
+                  .device-scroll [data-mobile-menu] { display: inline-flex !important; }
+                  .device-scroll .hide-mobile { display: none !important; }
+                  .device-scroll header { position: relative !important; }
+                  .device-scroll section { padding-left: 0 !important; padding-right: 0 !important; }
+                `}</style>
+                {content}
+              </div>
+            </div>
+          </div>
+        ) : content}
+
+        <TweaksPanel title="Tweaks">
+          <TweakSection title="Appearance">
+            <TweakRadio label="Theme" value={t.theme} options={[{value:"light",label:"Light"},{value:"dark",label:"Dark"}]} onChange={(v) => setTweak("theme", v)}/>
+            <TweakRadio label="Density" value={t.density} options={[{value:"comfortable",label:"Comfortable"},{value:"compact",label:"Compact"}]} onChange={(v) => setTweak("density", v)}/>
+          </TweakSection>
+          <TweakSection title="Accent hue">
+            <TweakSlider label="Hue" value={t.accentHue} min={0} max={360} step={5} onChange={(v) => setTweak("accentHue", v)} format={(v) => v + "°"}/>
+            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              {[{l:"Teal",h:215},{l:"Forest",h:160},{l:"Slate",h:255},{l:"Plum",h:310}].map(p => (
+                <button key={p.l} onClick={() => setTweak("accentHue", p.h)} style={{ flex: 1, height: 28, borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", background: `oklch(0.65 0.075 ${p.h})`, color: "#fff", fontSize: 11, cursor: "pointer" }}>{p.l}</button>
+              ))}
+            </div>
+          </TweakSection>
+          <TweakSection title="Preview">
+            <TweakRadio label="Device" value={t.previewDevice} options={[{value:"desktop",label:"Desktop"},{value:"mobile",label:"Mobile"}]} onChange={(v) => setTweak("previewDevice", v)}/>
+          </TweakSection>
+        </TweaksPanel>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
+  </script>
+</body>
+</html>
