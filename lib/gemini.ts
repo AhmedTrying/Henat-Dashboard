@@ -1,6 +1,7 @@
 // Server-only. Never import this from a client component.
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const FALLBACK_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || FALLBACK_MODEL;
 
 export interface ExtractedCountry {
   country: string;
@@ -84,16 +85,11 @@ export interface CallGeminiInput {
 
 export async function callGeminiExtract(
   input: CallGeminiInput,
-): Promise<{ result: ExtractionResult; rawResponse: string }> {
+): Promise<{ result: ExtractionResult; rawResponse: string; modelUsed: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
   }
-  const model = DEFAULT_MODEL;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model,
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
   const userPrompt = `Source code: ${input.sourceCode}\nSource URL: ${input.sourceUrl}\n\nRaw text:\n${input.rawText.slice(0, 30_000)}`;
 
   const body = {
@@ -105,6 +101,44 @@ export async function callGeminiExtract(
     },
   };
 
+  const modelsToTry = uniqueModels([DEFAULT_MODEL, FALLBACK_MODEL]);
+  let lastError: unknown = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const text = await requestModel({ apiKey, model, body });
+      let parsed: ExtractionResult;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error("Gemini response was not valid JSON");
+      }
+      return { result: normalize(parsed), rawResponse: text, modelUsed: model };
+    } catch (err) {
+      lastError = err;
+      if (err instanceof GeminiHttpError && err.status === 429) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Gemini request failed");
+}
+
+async function requestModel({
+  apiKey,
+  model,
+  body,
+}: {
+  apiKey: string;
+  model: string;
+  body: Record<string, unknown>;
+}): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    model,
+  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -112,9 +146,11 @@ export async function callGeminiExtract(
   });
 
   if (!res.ok) {
-    // Do not include the API key in any error path. The URL is logged by Next on error,
-    // so use a generic message instead.
-    throw new Error(`Gemini request failed with status ${res.status}`);
+    const errText = await safeErrorText(res);
+    throw new GeminiHttpError(
+      res.status,
+      errText ? `Gemini request failed with status ${res.status}: ${errText}` : `Gemini request failed with status ${res.status}`,
+    );
   }
 
   const json = (await res.json()) as {
@@ -125,15 +161,7 @@ export async function callGeminiExtract(
   if (!text) {
     throw new Error("Gemini response had no text");
   }
-
-  let parsed: ExtractionResult;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("Gemini response was not valid JSON");
-  }
-
-  return { result: normalize(parsed), rawResponse: text };
+  return text;
 }
 
 function normalize(r: Partial<ExtractionResult>): ExtractionResult {
@@ -178,4 +206,25 @@ function nonNegInt(v: unknown): number {
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(1, n));
+}
+
+function uniqueModels(models: string[]): string[] {
+  return Array.from(new Set(models.filter(Boolean)));
+}
+
+async function safeErrorText(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: { message?: string } };
+    return data.error?.message?.slice(0, 300) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+class GeminiHttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
 }

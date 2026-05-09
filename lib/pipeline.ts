@@ -143,7 +143,7 @@ async function runIngestionLocked(
         INSERT INTO extractions (raw_fetch_id, model, prompt_version, parsed, confidence)
         VALUES (
           ${rawId},
-          ${process.env.GEMINI_MODEL || "gemini-2.5-flash"},
+          ${extraction.modelUsed},
           ${PROMPT_VERSION},
           ${JSON.stringify(extraction.result)}::jsonb,
           ${extraction.result.confidence}
