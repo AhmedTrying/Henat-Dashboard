@@ -2,6 +2,7 @@ import { getLatestSnapshot } from "@/lib/snapshot";
 import { snapshotToCsv } from "@/lib/api";
 
 export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const snap = await getLatestSnapshot();
