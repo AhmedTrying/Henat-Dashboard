@@ -253,7 +253,26 @@ async function runIngestionLocked(
     };
   }
 
-  const totalsByCountry = aggregateLatestPerCountry(allCountries);
+  let totalsByCountry = aggregateLatestPerCountry(allCountries);
+  if (totalsByCountry.length === 0 && allEvents.length > 0) {
+    totalsByCountry = deriveCountriesFromEvents(allEvents);
+    warnings.push(
+      "no country-level records were extracted; derived provisional country totals from event records",
+    );
+  }
+
+  if (totalsByCountry.length === 0) {
+    warnings.push("no country-level records extracted; skipping snapshot publication");
+    return {
+      ok: false,
+      mode: "demo-fallback",
+      sources_attempted: sources.length,
+      sources_extracted: sourcesExtracted,
+      countries_published: 0,
+      events_published: 0,
+      warnings,
+    };
+  }
   const totals: SummaryTotals = {
     confirmed_cases: totalsByCountry.reduce((a, c) => a + c.confirmed_cases, 0),
     suspected_cases: totalsByCountry.reduce((a, c) => a + c.suspected_cases, 0),
@@ -593,6 +612,47 @@ function aggregateLatestPerCountry(rows: CountryRecord[]): CountryRecord[] {
       byCode.set(r.country_code, r);
     }
   }
+  return Array.from(byCode.values()).sort(
+    (a, b) => b.confirmed_cases - a.confirmed_cases,
+  );
+}
+
+function deriveCountriesFromEvents(rows: EventRecord[]): CountryRecord[] {
+  const byCode = new Map<string, CountryRecord>();
+
+  for (const e of rows) {
+    const existing = byCode.get(e.country_code);
+    if (!existing) {
+      byCode.set(e.country_code, {
+        country: e.country,
+        country_code: e.country_code,
+        confirmed_cases: e.confirmed_cases,
+        suspected_cases: e.suspected_cases,
+        deaths: e.deaths,
+        active_events: e.status === "active" ? 1 : 0,
+        source_name: e.source_name,
+        source_url: e.source_url,
+        source_type: e.source_type,
+        confidence: e.confidence,
+        data_status: "under_review",
+        report_date: e.report_date,
+        last_checked: e.last_checked,
+        last_updated: e.last_updated,
+      });
+      continue;
+    }
+
+    existing.confirmed_cases += e.confirmed_cases;
+    existing.suspected_cases += e.suspected_cases;
+    existing.deaths += e.deaths;
+    existing.active_events += e.status === "active" ? 1 : 0;
+    existing.confidence = Math.max(existing.confidence, e.confidence);
+    if (e.report_date > existing.report_date) {
+      existing.report_date = e.report_date;
+      existing.last_updated = e.last_updated;
+    }
+  }
+
   return Array.from(byCode.values()).sort(
     (a, b) => b.confirmed_cases - a.confirmed_cases,
   );
