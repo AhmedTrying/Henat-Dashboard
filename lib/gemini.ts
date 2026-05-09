@@ -1,6 +1,6 @@
 // Server-only. Never import this from a client component.
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 export interface ExtractedCountry {
   country: string;
