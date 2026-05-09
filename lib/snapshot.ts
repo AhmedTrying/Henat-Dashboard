@@ -31,6 +31,9 @@ export async function getLatestSnapshot(): Promise<Snapshot> {
     const r = rows[0];
     if (!r) return DEMO_SNAPSHOT;
 
+    const notes = r.notes ?? undefined;
+    const isDemo = isDemoSnapshot(notes);
+
     return {
       id: r.id,
       as_of: toIso(r.as_of),
@@ -41,10 +44,16 @@ export async function getLatestSnapshot(): Promise<Snapshot> {
       sources_used: r.sources_used ?? [],
       timeline: r.timeline ?? [],
       last_checked: toIso(r.last_checked),
-      is_demo: false,
-      notes: r.notes ?? undefined,
+      is_demo: isDemo,
+      notes,
     };
   } catch {
     return DEMO_SNAPSHOT;
   }
+}
+
+function isDemoSnapshot(notes?: string): boolean {
+  if (!notes) return false;
+  const text = notes.toLowerCase();
+  return text.includes("demo");
 }

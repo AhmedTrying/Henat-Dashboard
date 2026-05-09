@@ -49,7 +49,7 @@ async function main() {
       ${JSON.stringify(DEMO_SNAPSHOT.sources_used)}::jsonb,
       ${JSON.stringify(DEMO_SNAPSHOT.timeline)}::jsonb,
       ${DEMO_SNAPSHOT.last_checked},
-      ${"Seeded demo snapshot."}
+      ${"[DEMO] Seeded demo snapshot."}
     )
     RETURNING id
   `) as { id: string }[];

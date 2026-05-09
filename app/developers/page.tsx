@@ -91,7 +91,7 @@ export default async function DevelopersPage() {
           { name: "Developers", href: "/developers" },
         ])}
       />
-      <WarningBanner variant="strip" />
+      {snap.is_demo ? <WarningBanner variant="strip" /> : null}
 
       {/* Hero */}
       <section className="container" style={{ padding: "60px 0 36px" }}>
@@ -107,10 +107,19 @@ export default async function DevelopersPage() {
               read-only endpoints; rate limited to 60 req/min per IP at the edge.
             </p>
             <div className="warn-banner" style={{ maxWidth: 580 }}>
-              <Icon name="warn" size={16} />
+              <Icon name={snap.is_demo ? "warn" : "check"} size={16} />
               <div>
-                <strong style={{ fontWeight: 600 }}>Demo API</strong> — responses currently use demo data.
-                Real official-data integration will be added later.
+                {snap.is_demo ? (
+                  <>
+                    <strong style={{ fontWeight: 600 }}>Demo API</strong> — responses currently use demo data.
+                    Real official-data integration will be added later.
+                  </>
+                ) : (
+                  <>
+                    <strong style={{ fontWeight: 600 }}>Live mode</strong> — responses are generated from the
+                    latest official-source ingestion snapshot.
+                  </>
+                )}
               </div>
             </div>
             <div className="row gap-12 wrap">

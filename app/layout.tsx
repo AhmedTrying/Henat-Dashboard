@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     type: "website",
     title: "Hantavirus Dashboard",
     description:
-      "Latest official Hantavirus statistics and developer-ready data exports. Demo build.",
+      "Latest official Hantavirus statistics and developer-ready data exports with source transparency.",
     url: SITE_URL,
     siteName: "Hantavirus Dashboard",
   },
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hantavirus Dashboard",
     description:
-      "Latest official Hantavirus statistics and developer-ready data exports. Demo build.",
+      "Latest official Hantavirus statistics and developer-ready data exports with source transparency.",
   },
   robots: { index: true, follow: true },
 };

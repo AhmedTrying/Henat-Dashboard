@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           modifiedIso: snap.as_of,
         })}
       />
-      <WarningBanner variant="strip" />
+      {snap.is_demo ? <WarningBanner variant="strip" /> : null}
 
       <section className="container" style={{ padding: "36px 0 28px" }}>
         <div className="row between wrap gap-12" style={{ alignItems: "flex-end" }}>
@@ -208,7 +208,7 @@ function FreshnessPanel({
       <div className="col" style={{ gap: 12 }}>
         <FreshRow k="Last checked" v={fmtDateTimeUTC(lastChecked)} />
         <FreshRow k="Last updated by source" v={fmtDateTimeUTC(asOf)} />
-        <FreshRow k="Refresh cadence" v="Every 6 hours" />
+        <FreshRow k="Refresh cadence" v="Daily (Vercel Hobby cron)" />
         <div
           className="row between"
           style={{ paddingTop: 12, borderTop: "1px solid var(--line)" }}

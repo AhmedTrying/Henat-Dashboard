@@ -40,7 +40,7 @@ export default async function HomePage() {
     <main>
       <JsonLd data={breadcrumbLd([{ name: "Home", href: "/" }])} />
       <JsonLd data={faqLd(faqItems)} />
-      <WarningBanner variant="strip" />
+      {snap.is_demo ? <WarningBanner variant="strip" /> : null}
 
       {/* Hero */}
       <section className="container" style={{ padding: "72px 0 48px" }}>
@@ -161,7 +161,7 @@ export default async function HomePage() {
           </div>
           <TrustItem k={String(snap.sources_used.length)} label="Primary sources" sub="WHO · CDC · ECDC · PAHO · National" />
           <TrustItem k={String(snap.by_country.length)} label="Reporting countries" sub="Updated weekly" />
-          <TrustItem k="6h" label="Refresh cadence" sub="From source publication" />
+          <TrustItem k="24h" label="Refresh cadence" sub="From source publication" />
         </div>
       </section>
 
